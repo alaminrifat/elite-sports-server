@@ -62,6 +62,12 @@ async function run() {
             res.send(result);
         });
 
+        //   get approved classes
+        app.get('/classes', async(req,res)=>{
+            const classes = await classesCollection.find({ status: 'approved' }).toArray();
+            res.send(classes);
+        })
+        
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log(
