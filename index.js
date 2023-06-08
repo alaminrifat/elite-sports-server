@@ -47,6 +47,7 @@ async function run() {
         const instructorsCollection = client
             .db("eliteSportsDB")
             .collection("instructors");
+        const selectedCourseCollection = client.db("eliteSportsDB").collection("selectedCourse");
 
         // store an user to the database
         app.post("/users", async (req, res) => {
@@ -66,6 +67,21 @@ async function run() {
         app.get('/classes', async(req,res)=>{
             const classes = await classesCollection.find({ status: 'approved' }).toArray();
             res.send(classes);
+        })
+
+        //save selected class
+        app.post('/classes', async (req,res)=>{
+            const selectedClass = req.body;
+            console.log(selectedClass);
+            const result = await selectedCourseCollection.insertOne(selectedClass);
+            res.send(result);
+        })
+        // get selected classes
+        app.get('/selectedClasses/:email',async(req,res)=>{
+            const email = req.params.email;
+            console.log(email);
+            const selectedClasses = await selectedCourseCollection.find({ email }).toArray();
+            res.send(selectedClasses);
         })
         
         // Send a ping to confirm a successful connection
