@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -26,22 +26,25 @@ app.use(cors(corsConfig));
 app.options("*", cors(corsConfig));
 app.use(express.json());
 
-const verifyJWT = (req,res,next) =>{
+const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
-    if(!authorization){
-        return res.status(401).send({error:true, message:'Unauthorized Access!!!'});
+    if (!authorization) {
+        return res
+            .status(401)
+            .send({ error: true, message: "Unauthorized Access!!!" });
     }
-    const token = authorization.split(' ')[1];
+    const token = authorization.split(" ")[1];
 
-    jwt.verify(token,process.env.ACCESS_TOKEN, (err,decoded)=>{
-        if(err){
-            return res.status(403).send({error:true, message:'Forbidden Access!!!'});
+    jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+            return res
+                .status(403)
+                .send({ error: true, message: "Forbidden Access!!!" });
         }
         req.decoded = decoded;
         next();
-    })
-
-}
+    });
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vhaictv.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -65,15 +68,17 @@ async function run() {
         const instructorsCollection = client
             .db("eliteSportsDB")
             .collection("instructors");
-        const selectedCourseCollection = client.db("eliteSportsDB").collection("selectedCourse");
+        const selectedCourseCollection = client
+            .db("eliteSportsDB")
+            .collection("selectedCourse");
 
-
-        app.post('/jwt' , async(req,res)=>{
+        app.post("/jwt", async (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN,{expiresIn: '2h'});
-            res.send({token});
-        })
-
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+                expiresIn: "2h",
+            });
+            res.send({ token });
+        });
 
         // store an user to the database
         app.post("/users", async (req, res) => {
@@ -90,26 +95,98 @@ async function run() {
         });
 
         //   get approved classes
-        app.get('/classes', async(req,res)=>{
-            const classes = await classesCollection.find({ status: 'approved' }).toArray();
+        app.get("/classes", verifyJWT, async (req, res) => {
+            const classes = await classesCollection
+                .find({ status: "approved" })
+                .toArray();
             res.send(classes);
-        })
+        });
 
         //save selected class
-        app.post('/classes', async (req,res)=>{
+        app.post("/classes", async (req, res) => {
             const selectedClass = req.body;
-            console.log(selectedClass);
-            const result = await selectedCourseCollection.insertOne(selectedClass);
+            // check already selected or not ?
+            const email = selectedClass.email;
+            const courseId = selectedClass.course._id;
+
+            const existingSelection = await selectedCourseCollection.findOne({
+                email: email,
+                "course._id": courseId,
+            });
+            if (existingSelection) {
+                // Email has already selected this course
+                return res
+                    .send({
+                        error: "This course has already been selected by the email.",
+                    });
+            }
+
+            // console.log(selectedClass);
+            const result = await selectedCourseCollection.insertOne(
+                selectedClass
+            );
             res.send(result);
-        })
+        });
         // get selected classes
-        app.get('/selectedClasses/:email',async(req,res)=>{
+        app.get("/selectedClasses/:email", async (req, res) => {
             const email = req.params.email;
             console.log(email);
-            const selectedClasses = await selectedCourseCollection.find({ email }).toArray();
+            const selectedClasses = await selectedCourseCollection
+                .find({ email })
+                .toArray();
             res.send(selectedClasses);
-        })
-        
+        });
+
+        // isStudent??
+        app.get("/users/student/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            // console.log(email);
+            // if (req.decoded.email !== email) {
+            //   res.send({ student: false })
+            // }
+
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const result = { student: user?.role === "Student" };
+            res.send(result);
+        });
+
+        // isInstructor??
+        app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            console.log(email);
+            if (req.decoded.email !== email) {
+                res.send({ instructor: false });
+            }
+
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const result = { instructor: user?.role === "instructor" };
+            res.send(result);
+        });
+
+        // for admin
+        app.get("/all-users", verifyJWT, async (req, res) => {
+            const users = await usersCollection.find().toArray();
+            res.send(users);
+        });
+        // verify admin?
+        app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            console.log(email);
+            if (req.decoded.email !== email) {
+                res.send({ admin: false });
+            }
+
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const result = { admin: user?.role === "admin" };
+            res.send(result);
+        });
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log(
