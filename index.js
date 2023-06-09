@@ -110,7 +110,7 @@ async function run() {
         app.get("/classes/count/:instructorName", async (req, res) => {
             const instructorName = req.params.instructorName;
             const classCount = await classesCollection.countDocuments({
-                "instructor": instructorName,
+                instructor: instructorName,
             });
             console.log(classCount);
             res.json({ count: classCount });
@@ -183,6 +183,16 @@ async function run() {
         app.get("/all-users", verifyJWT, async (req, res) => {
             const users = await usersCollection.find().toArray();
             res.send(users);
+        });
+        // update user role
+        app.patch("/users/:userId", async (req, res) => {
+            const userId = req.params.userId;
+            const { role } = req.body;
+            
+            
+            const result = await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: { role } });
+            console.log(result);
+            res.send(result)
         });
         // verify admin?
         app.get("/users/admin/:email", verifyJWT, async (req, res) => {
