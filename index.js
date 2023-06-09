@@ -101,7 +101,20 @@ async function run() {
                 .toArray();
             res.send(classes);
         });
-
+        // get all instructos
+        app.get("/instructors", async (req, res) => {
+            const instructors = await instructorsCollection.find().toArray();
+            res.send(instructors);
+        });
+        // get total count of instructors classes
+        app.get("/classes/count/:instructorName", async (req, res) => {
+            const instructorName = req.params.instructorName;
+            const classCount = await classesCollection.countDocuments({
+                "instructor": instructorName,
+            });
+            console.log(classCount);
+            res.json({ count: classCount });
+        });
         //save selected class
         app.post("/classes", async (req, res) => {
             const selectedClass = req.body;
@@ -115,10 +128,9 @@ async function run() {
             });
             if (existingSelection) {
                 // Email has already selected this course
-                return res
-                    .send({
-                        error: "This course has already been selected by the email.",
-                    });
+                return res.send({
+                    error: "This course has already been selected by the email.",
+                });
             }
 
             // console.log(selectedClass);
