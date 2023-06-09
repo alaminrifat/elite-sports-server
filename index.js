@@ -245,6 +245,21 @@ async function run() {
                 res.sendStatus(500);
             }
         });
+        // Add Feedback to Class
+        app.post("/api/classes/:classId/feedback", async (req, res) => {
+            const { classId } = req.params;
+            const { feedback } = req.body;
+            try {
+                const updatedClass = await classesCollection.updateOne(
+                    { _id: new ObjectId(classId) },
+                    { $set: { feedback: feedback } }
+                );
+                res.send(updatedClass);
+            } catch (error) {
+                console.error("Error adding feedback to class:", error);
+                res.sendStatus(500);
+            }
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
