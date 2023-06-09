@@ -148,6 +148,11 @@ async function run() {
                 .toArray();
             res.send(selectedClasses);
         });
+        // get all classes
+        app.get("/all-classes", async (req, res) => {
+            const allClasses = await classesCollection.find().toArray();
+            res.send(allClasses);
+        });
 
         // isStudent??
         app.get("/users/student/:email", verifyJWT, async (req, res) => {
@@ -188,11 +193,13 @@ async function run() {
         app.patch("/users/:userId", async (req, res) => {
             const userId = req.params.userId;
             const { role } = req.body;
-            
-            
-            const result = await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: { role } });
+
+            const result = await usersCollection.updateOne(
+                { _id: new ObjectId(userId) },
+                { $set: { role } }
+            );
             console.log(result);
-            res.send(result)
+            res.send(result);
         });
         // verify admin?
         app.get("/users/admin/:email", verifyJWT, async (req, res) => {
@@ -207,6 +214,36 @@ async function run() {
             const user = await usersCollection.findOne(query);
             const result = { admin: user?.role === "admin" };
             res.send(result);
+        });
+        // approve a class
+        app.patch("/api/classes/:classId/approve", async (req, res) => {
+            const { classId } = req.params;
+            console.log(classId);
+            try {
+                const updatedClass = await classesCollection.updateOne(
+                    { _id: new ObjectId(classId) },
+                    { $set: { status: "approved" } }
+                );
+                res.send(updatedClass);
+            } catch (error) {
+                console.error("Error approving class:", error);
+                res.sendStatus(500);
+            }
+        });
+        // deny a class
+        app.patch("/api/classes/:classId/deny", async (req, res) => {
+            const { classId } = req.params;
+            console.log(classId);
+            try {
+                const updatedClass = await classesCollection.updateOne(
+                    { _id: new ObjectId(classId) },
+                    { $set: { status: "denied" } }
+                );
+                res.send(updatedClass);
+            } catch (error) {
+                console.error("Error deny class:", error);
+                res.sendStatus(500);
+            }
         });
 
         // Send a ping to confirm a successful connection
