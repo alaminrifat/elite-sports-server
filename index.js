@@ -183,8 +183,16 @@ async function run() {
             const result = { instructor: user?.role === "instructor" };
             res.send(result);
         });
+        // add a course
+        app.post("/api/classes", async (req, res) => {
+            const newClass = req.body;
+            const result = await classesCollection.insertOne(newClass);
+            res.send(result);
+        });
+        
 
         // for admin
+
         app.get("/all-users", verifyJWT, async (req, res) => {
             const users = await usersCollection.find().toArray();
             res.send(users);
