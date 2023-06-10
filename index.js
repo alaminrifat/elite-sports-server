@@ -99,6 +99,46 @@ async function run() {
                 res.status(500).json({ error: "Internal server error" });
             }
         });
+        // popular instructors
+        // Assuming you have a "instructors" collection in your MongoDB database
+
+        // Retrieve the top 6 instructors based on the number of students in their classes
+        // Assuming you have a "instructors" collection in your MongoDB database
+
+// Retrieve the top 6 instructors based on the number of students in their classes
+app.get('/popularInstructors', async (req, res) => {
+    try {
+      const popularInstructors = await instructorsCollection
+        .aggregate([
+          {
+            $lookup: {
+              from: 'classes',
+              localField: 'name',
+              foreignField: 'instructor',
+              as: 'classes',
+            },
+          },
+          {
+            $addFields: {
+              totalStudents: { $sum: '$classes.enrolledStudents' },
+            },
+          },
+          {
+            $sort: { totalStudents: -1 },
+          },
+          {
+            $limit: 6,
+          },
+        ])
+        .toArray();
+  
+      res.json(popularInstructors);
+    } catch (error) {
+      console.error('Error fetching popular instructors:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
 
         // store an user to the database
         app.post("/users", async (req, res) => {
