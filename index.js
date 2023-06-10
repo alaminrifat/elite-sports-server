@@ -4,6 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const app = express();
+const stripe = require("stripe")(process.env.SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 const corsConfig = {
@@ -150,6 +151,7 @@ async function run() {
         });
         // get all classes
         app.get("/all-classes", async (req, res) => {
+            console.log("hitted");
             const allClasses = await classesCollection.find().toArray();
             res.send(allClasses);
         });
@@ -169,6 +171,21 @@ async function run() {
             res.send(result);
         });
 
+        // make payment intent
+        app.post("/create-payment-intent", async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ["card"],
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
         // isInstructor??
         app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
@@ -189,7 +206,15 @@ async function run() {
             const result = await classesCollection.insertOne(newClass);
             res.send(result);
         });
-        
+        // get all class of a instructor
+        app.get("/all-classes/:email", async (req, res) => {
+            const userEmail = req.params.email;
+            console.log("hitted");
+            const allClasses = await classesCollection
+                .find({ email: userEmail })
+                .toArray();
+            res.send(allClasses);
+        });
 
         // for admin
 
