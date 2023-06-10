@@ -72,13 +72,32 @@ async function run() {
         const selectedCourseCollection = client
             .db("eliteSportsDB")
             .collection("selectedCourse");
-
+        const paymentCollection = client
+            .db("eliteSportsDB")
+            .collection("payment");
+        // jwt
         app.post("/jwt", async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
                 expiresIn: "2h",
             });
             res.send({ token });
+        });
+
+        // homepage
+        // popular classses
+        app.get("/popularClasses", async (req, res) => {
+            try {
+                const popularClasses = await classesCollection
+                    .find()
+                    .sort({ enrolledStudents: -1 })
+                    .limit(6)
+                    .toArray();
+                res.json(popularClasses);
+            } catch (error) {
+                console.error("Error fetching popular classes:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
         });
 
         // store an user to the database
@@ -154,6 +173,37 @@ async function run() {
             console.log("hitted");
             const allClasses = await classesCollection.find().toArray();
             res.send(allClasses);
+        });
+
+        // get selected class using id
+        app.get("/pay/selectedClasses/:id", async (req, res) => {
+            console.log("hitt");
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await selectedCourseCollection.findOne(query);
+            console.log(result);
+            res.send(result);
+        });
+        // store payment
+        app.post("/payments", async (req, res) => {
+            const payment = req.body;
+
+            const result = await paymentCollection.insertOne(payment);
+
+            const selectedCourseID = payment.selectedCourseID;
+            // now in selectedCourseCollection change this course status to paid
+            await selectedCourseCollection.updateOne(
+                { _id: new ObjectId(selectedCourseID) },
+                { $set: { status: "paid" } }
+            );
+
+            const courseID = payment.courseId;
+            // now from this classesCollection available seat will reduce by 1 and enrolledStudents will increase by 1
+            await classesCollection.updateOne(
+                { _id: new ObjectId(courseID) },
+                { $inc: { availableSeats: -1, enrolledStudents: 1 } }
+            );
+            res.send(result);
         });
 
         // isStudent??
