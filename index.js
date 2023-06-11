@@ -66,9 +66,6 @@ async function run() {
         const classesCollection = client
             .db("eliteSportsDB")
             .collection("classes");
-        const instructorsCollection = client
-            .db("eliteSportsDB")
-            .collection("instructors");
         const selectedCourseCollection = client
             .db("eliteSportsDB")
             .collection("selectedCourse");
@@ -108,8 +105,11 @@ async function run() {
         // Retrieve the top 6 instructors based on the number of students in their classes
         app.get("/popularInstructors", async (req, res) => {
             try {
-                const popularInstructors = await instructorsCollection
+                const popularInstructors = await usersCollection
                     .aggregate([
+                        {
+                            $match: { role: "instructor" },
+                        },
                         {
                             $lookup: {
                                 from: "classes",
@@ -119,10 +119,17 @@ async function run() {
                             },
                         },
                         {
-                            $addFields: {
+                            $unwind: "$classes",
+                        },
+                        {
+                            $group: {
+                                _id: "$_id",
+                                name: { $first: "$name" },
+                                image: { $first: "$image" },
                                 totalStudents: {
                                     $sum: "$classes.enrolledStudents",
                                 },
+                                course: { $first: "$classes.name" },
                             },
                         },
                         {
