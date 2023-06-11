@@ -164,7 +164,9 @@ async function run() {
         });
         // get all instructos
         app.get("/instructors", async (req, res) => {
-            const instructors = await instructorsCollection.find().toArray();
+            const instructors = await usersCollection
+                .find({ role: "instructor" })
+                .toArray();
             res.send(instructors);
         });
         // get total count of instructors classes
@@ -282,7 +284,9 @@ async function run() {
             const email = req.params.email;
 
             // Find payment histories for the provided email using the paymentCollection
-            const result = await paymentCollection.find({ user: email }).toArray();
+            const result = await paymentCollection
+                .find({ user: email })
+                .toArray();
             res.send(result);
         });
         // isInstructor??
