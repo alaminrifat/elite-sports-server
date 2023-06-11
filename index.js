@@ -105,40 +105,41 @@ async function run() {
         // Retrieve the top 6 instructors based on the number of students in their classes
         // Assuming you have a "instructors" collection in your MongoDB database
 
-// Retrieve the top 6 instructors based on the number of students in their classes
-app.get('/popularInstructors', async (req, res) => {
-    try {
-      const popularInstructors = await instructorsCollection
-        .aggregate([
-          {
-            $lookup: {
-              from: 'classes',
-              localField: 'name',
-              foreignField: 'instructor',
-              as: 'classes',
-            },
-          },
-          {
-            $addFields: {
-              totalStudents: { $sum: '$classes.enrolledStudents' },
-            },
-          },
-          {
-            $sort: { totalStudents: -1 },
-          },
-          {
-            $limit: 6,
-          },
-        ])
-        .toArray();
-  
-      res.json(popularInstructors);
-    } catch (error) {
-      console.error('Error fetching popular instructors:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-  
+        // Retrieve the top 6 instructors based on the number of students in their classes
+        app.get("/popularInstructors", async (req, res) => {
+            try {
+                const popularInstructors = await instructorsCollection
+                    .aggregate([
+                        {
+                            $lookup: {
+                                from: "classes",
+                                localField: "name",
+                                foreignField: "instructor",
+                                as: "classes",
+                            },
+                        },
+                        {
+                            $addFields: {
+                                totalStudents: {
+                                    $sum: "$classes.enrolledStudents",
+                                },
+                            },
+                        },
+                        {
+                            $sort: { totalStudents: -1 },
+                        },
+                        {
+                            $limit: 6,
+                        },
+                    ])
+                    .toArray();
+
+                res.json(popularInstructors);
+            } catch (error) {
+                console.error("Error fetching popular instructors:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+        });
 
         // store an user to the database
         app.post("/users", async (req, res) => {
@@ -155,7 +156,7 @@ app.get('/popularInstructors', async (req, res) => {
         });
 
         //   get approved classes
-        app.get("/classes", verifyJWT, async (req, res) => {
+        app.get("/classes", async (req, res) => {
             const classes = await classesCollection
                 .find({ status: "approved" })
                 .toArray();
@@ -250,14 +251,14 @@ app.get('/popularInstructors', async (req, res) => {
         app.get("/users/student/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
 
-            // console.log(email);
-            // if (req.decoded.email !== email) {
-            //   res.send({ student: false })
-            // }
+            console.log(email);
+            if (req.decoded.email !== email) {
+                res.send({ student: false });
+            }
 
             const query = { email: email };
             const user = await usersCollection.findOne(query);
-            const result = { student: user?.role === "Student" };
+            const result = { student: user?.role === "student" };
             res.send(result);
         });
 
@@ -275,6 +276,14 @@ app.get('/popularInstructors', async (req, res) => {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
+        });
+        // get payment history
+        app.get("/payment-history/:email", async (req, res) => {
+            const email = req.params.email;
+
+            // Find payment histories for the provided email using the paymentCollection
+            const result = await paymentCollection.find({ user: email }).toArray();
+            res.send(result);
         });
         // isInstructor??
         app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
