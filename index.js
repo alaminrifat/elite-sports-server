@@ -186,7 +186,7 @@ async function run() {
             res.json({ count: classCount });
         });
         //save selected class
-        app.post("/classes", async (req, res) => {
+        app.post("/classes",verifyJWT, async (req, res) => {
             const selectedClass = req.body;
             // check already selected or not ?
             const email = selectedClass.email;
@@ -202,6 +202,7 @@ async function run() {
                     error: "This course has already been selected by the email.",
                 });
             }
+            
 
             // console.log(selectedClass);
             const result = await selectedCourseCollection.insertOne(
@@ -209,8 +210,14 @@ async function run() {
             );
             res.send(result);
         });
+        app.delete('/deleteSelected/:id',verifyJWT,async(req,res)=>{
+            const id = req.params.id;
+            const result = await selectedCourseCollection.deleteOne({ _id: new ObjectId(id) });
+            res.send(result)
+        })
+
         // get selected classes
-        app.get("/selectedClasses/:email", async (req, res) => {
+        app.get("/selectedClasses/:email",verifyJWT, async (req, res) => {
             const email = req.params.email;
             console.log(email);
             const selectedClasses = await selectedCourseCollection
@@ -220,14 +227,14 @@ async function run() {
         });
         // get all classes
         app.get("/all-classes", async (req, res) => {
-            console.log("hitted");
+          
             const allClasses = await classesCollection.find().toArray();
             res.send(allClasses);
         });
 
         // get selected class using id
-        app.get("/pay/selectedClasses/:id", async (req, res) => {
-            console.log("hitt");
+        app.get("/pay/selectedClasses/:id",verifyJWT, async (req, res) => {
+          
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await selectedCourseCollection.findOne(query);
@@ -235,7 +242,7 @@ async function run() {
             res.send(result);
         });
         // store payment
-        app.post("/payments", async (req, res) => {
+        app.post("/payments",verifyJWT, async (req, res) => {
             const payment = req.body;
 
             const result = await paymentCollection.insertOne(payment);
@@ -287,7 +294,7 @@ async function run() {
             });
         });
         // get payment history
-        app.get("/payment-history/:email", async (req, res) => {
+        app.get("/payment-history/:email",verifyJWT, async (req, res) => {
             const email = req.params.email;
 
             // Find payment histories for the provided email using the paymentCollection
@@ -310,14 +317,15 @@ async function run() {
             const result = { instructor: user?.role === "instructor" };
             res.send(result);
         });
+        // Instructos
         // add a course
-        app.post("/api/classes", async (req, res) => {
+        app.post("/api/classes",verifyJWT, async (req, res) => {
             const newClass = req.body;
             const result = await classesCollection.insertOne(newClass);
             res.send(result);
         });
         // get all class of a instructor
-        app.get("/all-classes/:email", async (req, res) => {
+        app.get("/all-classes/:email",verifyJWT, async (req, res) => {
             const userEmail = req.params.email;
             console.log("hitted");
             const allClasses = await classesCollection
@@ -333,7 +341,7 @@ async function run() {
             res.send(users);
         });
         // update user role
-        app.patch("/users/:userId", async (req, res) => {
+        app.patch("/users/:userId",verifyJWT, async (req, res) => {
             const userId = req.params.userId;
             const { role } = req.body;
 
@@ -359,7 +367,7 @@ async function run() {
             res.send(result);
         });
         // approve a class
-        app.patch("/api/classes/:classId/approve", async (req, res) => {
+        app.patch("/api/classes/:classId/approve",verifyJWT, async (req, res) => {
             const { classId } = req.params;
             console.log(classId);
             try {
@@ -374,7 +382,7 @@ async function run() {
             }
         });
         // deny a class
-        app.patch("/api/classes/:classId/deny", async (req, res) => {
+        app.patch("/api/classes/:classId/deny",verifyJWT, async (req, res) => {
             const { classId } = req.params;
             console.log(classId);
             try {
@@ -389,7 +397,7 @@ async function run() {
             }
         });
         // Add Feedback to Class
-        app.post("/api/classes/:classId/feedback", async (req, res) => {
+        app.post("/api/classes/:classId/feedback",verifyJWT, async (req, res) => {
             const { classId } = req.params;
             const { feedback } = req.body;
             try {
